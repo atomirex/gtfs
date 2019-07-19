@@ -82,8 +82,8 @@ func (t *Trip) String() string {
 // From stop_times.txt
 type StopTime struct {
 	TripId            string `gtfs_name:"trip_id" gtfs_required:"true"`
-	ArrivalTime       string `gtfs_name:"arrival_time" gtfs_required:"true"`
-	DepartureTime     string `gtfs_name:"departure_time" gtfs_required:"true"`
+	ArrivalTime       string `gtfs_name:"arrival_time" gtfs_required:"false"`
+	DepartureTime     string `gtfs_name:"departure_time" gtfs_required:"false"`
 	StopId            string `gtfs_name:"stop_id" gtfs_required:"true"`
 	StopSequence      string `gtfs_name:"stop_sequence" gtfs_required:"true"`
 	StopHeadSign      string `gtfs_name:"stop_headsign" gtfs_required:"false"`
@@ -203,25 +203,43 @@ func getFieldIndexForStruct(t reflect.Type, name string) (int, error) {
 	return -1, errors.New("Field not found " + name)
 }
 
+func getIfFieldRequired(t reflect.Type, name string) bool {
+	for i := 0; i < t.NumField(); i++ {
+		f := t.Field(i)
+		if f.Tag.Get("gtfs_name") == name {
+			if f.Tag.Get("gtfs_required") == "true" {
+				return true
+			} else {
+				return false
+			}
+		}
+	}
+
+	return false
+}
+
 func Decode(r io.Reader, rowtype interface{}) ([]interface{}, error) {
 	c := csv.NewReader(r)
-	row, err := c.Read()
+	columns, err := c.Read()
 	if err != nil {
 		return nil, err
 	}
 
-	if len(row) == 0 {
+	if len(columns) == 0 {
 		return nil, errors.New("No fields")
 	}
 
-	fields := make([]int, len(row))
+	fields := make([]int, len(columns))
+	required := make([]bool, len(columns))
 	t := reflect.TypeOf(rowtype).Elem()
 
-	for i := 0; i < len(row); i++ {
-		fields[i], err = getFieldIndexForStruct(t, row[i])
+	for i := 0; i < len(columns); i++ {
+		fields[i], err = getFieldIndexForStruct(t, columns[i])
 		if err != nil {
 			return nil, err
 		}
+
+		required[i] = getIfFieldRequired(t, columns[i])
 	}
 
 	output := make([]interface{}, 0)
@@ -231,8 +249,17 @@ func Decode(r io.Reader, rowtype interface{}) ([]interface{}, error) {
 		if err == nil {
 			o := reflect.New(t)
 			for i := 0; i < len(row); i++ {
-				o.Elem().Field(fields[i]).SetString(row[i])
+				value := row[i]
+
+				if required[i] {
+					if value == "" {
+						return nil, errors.New("Row is missing required field " + columns[i])
+					}
+				}
+
+				o.Elem().Field(fields[i]).SetString(value)
 			}
+
 			output = append(output, o.Interface())
 		} else if err == io.EOF {
 			return output, nil
@@ -240,8 +267,6 @@ func Decode(r io.Reader, rowtype interface{}) ([]interface{}, error) {
 			return nil, err
 		}
 	}
-
-	// TODO validate required fields are loaded
 
 	return nil, errors.New("Not implemented")
 }
