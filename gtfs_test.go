@@ -5,6 +5,12 @@ import (
 	"testing"
 )
 
+func assert(t *testing.T, condition bool, message string) {
+	if !condition {
+		t.Errorf(message)
+	}
+}
+
 func TestAgency(t *testing.T) {
 	s := `agency_id,agency_name,agency_url,agency_timezone,agency_phone,agency_lang
 FunBus,The Fun Bus,http://www.thefunbus.org,America/Los_Angeles,(310) 555-0222,en`
@@ -13,11 +19,18 @@ FunBus,The Fun Bus,http://www.thefunbus.org,America/Los_Angeles,(310) 555-0222,e
 	if err != nil {
 		t.Error(err)
 	} else {
-		if len(out) == 0 {
-			t.Errorf("No output")
+		if len(out) != 1 {
+			t.Errorf("Wrong length of output %d", len(out))
 		} else {
-			t.Log(out[0].(*Agency).String())
-			t.Errorf("Need to validate the struct")
+			a := out[0].(*Agency)
+			t.Log(a.String())
+
+			assert(t, a.Id == "FunBus", "Wrong agency Id")
+			assert(t, a.Name == "The Fun Bus", "Wrong agency name")
+			assert(t, a.Url == "http://www.thefunbus.org", "Wrong agency url")
+			assert(t, a.Timezone == "America/Los_Angeles", "Wrong agency timezone")
+			assert(t, a.Phone == "(310) 555-0222", "Wrong agency phone number")
+			assert(t, a.Language == "en", "Wrong agency language")
 		}
 	}
 }
@@ -36,13 +49,20 @@ S8,24th St. Mission Station,,37.752240,-122.418450,http://www.bart.gov/stations/
 	if err != nil {
 		t.Error(err)
 	} else {
-		if len(out) == 0 {
-			t.Errorf("No output")
+		if len(out) != 8 {
+			t.Errorf("Wrong length of output %d", len(out))
 		} else {
 			for i := 0; i < len(out); i++ {
 				t.Log(out[i].(*Stop).String())
 			}
-			t.Errorf("Need to validate the struct")
+
+			s := out[5].(*Stop)
+
+			assert(t, s.Id == "S6", "Wrong stop ID")
+			assert(t, s.Name == "Mission St. & 15th St.", "Wrong stop name")
+			assert(t, s.Description == "The stop is located 10 feet north of Mission St.", "Wrong stop description")
+			assert(t, s.Latitude == "37.766629", "Wrong stop latitude")
+			assert(t, s.Longitude == "-122.419782", "Wrong stop longitude")
 		}
 	}
 }
@@ -55,13 +75,20 @@ A,17,Mission,"The ""A"" route travels from lower Mission to Downtown.",3`
 	if err != nil {
 		t.Error(err)
 	} else {
-		if len(out) == 0 {
-			t.Errorf("No output")
+		if len(out) != 1 {
+			t.Errorf("Wrong length of output %d", len(out))
 		} else {
 			for i := 0; i < len(out); i++ {
 				t.Log(out[i].(*Route).String())
 			}
-			t.Errorf("Need to validate the struct")
+
+			r := out[0].(*Route)
+
+			assert(t, r.Id == "A", "Wrong route id")
+			assert(t, r.ShortName == "17", "Wrong route short name")
+			assert(t, r.LongName == "Mission", "Wrong long name for route")
+			assert(t, r.Description == `The "A" route travels from lower Mission to Downtown.`, "Wrong route description")
+			assert(t, r.Type == "3", "Wrong route type")
 		}
 	}
 }
@@ -74,13 +101,20 @@ A,WE,AWE2,Downtown,2`
 	if err != nil {
 		t.Error(err)
 	} else {
-		if len(out) == 0 {
-			t.Errorf("No output")
+		if len(out) != 2 {
+			t.Errorf("Wrong length of output %d", len(out))
 		} else {
 			for i := 0; i < len(out); i++ {
 				t.Log(out[i].(*Trip).String())
 			}
-			t.Errorf("Need to validate the struct")
+
+			r := out[0].(*Trip)
+
+			assert(t, r.RouteId == "A", "Wrong trip route id")
+			assert(t, r.ServiceId == "WE", "Wrong trip service id")
+			assert(t, r.Id == "AWE1", "Wrong trip id")
+			assert(t, r.HeadSign == "Downtown", "Wrong trip headsign")
+			assert(t, r.BlockId == "1", "Wrong trip block id")
 		}
 	}
 }
@@ -102,13 +136,22 @@ AWD1,0:06:45,0:06:45,S6,6,0,0`
 	if err != nil {
 		t.Error(err)
 	} else {
-		if len(out) == 0 {
-			t.Errorf("No output")
+		if len(out) != 11 {
+			t.Errorf("Wrong length of output %d", len(out))
 		} else {
 			for i := 0; i < len(out); i++ {
 				t.Log(out[i].(*StopTime).String())
 			}
-			t.Errorf("Need to validate the struct")
+
+			s := out[10].(*StopTime)
+
+			assert(t, s.TripId == "AWD1", "Wrong stop time trip id")
+			assert(t, s.ArrivalTime == "0:06:45", "Wrong stop time arrival time")
+			assert(t, s.DepartureTime == "0:06:45", "Wrong stop time departure time")
+			assert(t, s.StopId == "S6", "Wrong stop time stop id")
+			assert(t, s.StopSequence == "6", "Wrong stop time stop sequence")
+			assert(t, s.PickupType == "0", "Wrong stop time pickup type")
+			assert(t, s.DropOffType == "0", "Wrong stop time drop off type")
 		}
 	}
 }
@@ -122,13 +165,25 @@ WD,1,1,1,1,1,0,0,20060701,20060731`
 	if err != nil {
 		t.Error(err)
 	} else {
-		if len(out) == 0 {
-			t.Errorf("No output")
+		if len(out) != 2 {
+			t.Errorf("Wrong length of output %d", len(out))
 		} else {
 			for i := 0; i < len(out); i++ {
 				t.Log(out[i].(*Service).String())
 			}
-			t.Errorf("Need to validate the struct")
+
+			s := out[0].(*Service)
+
+			assert(t, s.ServiceId == "WE", "Wrong service id")
+			assert(t, s.Monday == "0", "Wrong service monday")
+			assert(t, s.Tuesday == "0", "Wrong service tuesday")
+			assert(t, s.Wednesday == "0", "Wrong service wednesday")
+			assert(t, s.Thursday == "0", "Wrong service thursday")
+			assert(t, s.Friday == "0", "Wrong service friday")
+			assert(t, s.Saturday == "1", "Wrong service saturday")
+			assert(t, s.Sunday == "1", "Wrong service sunday")
+			assert(t, s.StartDate == "20060701", "Wrong service start date")
+			assert(t, s.EndDate == "20060731", "Wrong service end date")
 		}
 	}
 }
@@ -143,13 +198,18 @@ WE,20060704,1`
 	if err != nil {
 		t.Error(err)
 	} else {
-		if len(out) == 0 {
-			t.Errorf("No output")
+		if len(out) != 4 {
+			t.Errorf("Wrong length of output %d", len(out))
 		} else {
 			for i := 0; i < len(out); i++ {
 				t.Log(out[i].(*ServiceException).String())
 			}
-			t.Errorf("Need to validate the struct")
+
+			s := out[2].(*ServiceException)
+
+			assert(t, s.ServiceId == "WD", "Wrong service exception service id")
+			assert(t, s.Date == "20060704", "Wrong service exception date")
+			assert(t, s.ExceptionType == "2", "Wrong service exception type")
 		}
 	}
 }
@@ -165,13 +225,21 @@ func TestFares(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	} else {
-		if len(out) == 0 {
-			t.Errorf("No output")
+		if len(out) != 5 {
+			t.Errorf("Wrong length of output %d", len(out))
 		} else {
 			for i := 0; i < len(out); i++ {
 				t.Log(out[i].(*Fare).String())
 			}
-			t.Errorf("Need to validate the struct")
+
+			f := out[2].(*Fare)
+
+			assert(t, f.FareId == "3", "Wrong fare id")
+			assert(t, f.Price == "1.50", "Wrong fare price")
+			assert(t, f.CurrencyType == "USD", "Wrong fare currency type")
+			assert(t, f.PaymentMethod == "0", "Wrong fare payment method")
+			assert(t, f.Transfers == "0", "Wrong fare transfers")
+			assert(t, f.TransferDuration == "0", "Wrong fare transfer duration")
 		}
 	}
 }
@@ -193,13 +261,20 @@ c,GRT,,,6`
 	if err != nil {
 		t.Error(err)
 	} else {
-		if len(out) == 0 {
-			t.Errorf("No output")
+		if len(out) != 10 {
+			t.Errorf("Wrong length of output %d", len(out))
 		} else {
 			for i := 0; i < len(out); i++ {
 				t.Log(out[i].(*FareRule).String())
 			}
-			t.Errorf("Need to validate the struct")
+
+			f := out[2].(*FareRule)
+
+			assert(t, f.FareId == "a", "Wrong fare rule fare id")
+			assert(t, f.RouteId == "GRT", "Wrong fare rules route id")
+			assert(t, f.OriginId == "1", "Wrong fare rule origin id")
+			assert(t, f.DestinationId == "1", "Wrong fare rule destination id")
+			assert(t, f.ContainsId == "", "Wrong fare rules contains id")
 		}
 	}
 }
@@ -214,13 +289,20 @@ A_shp,37.65863,-122.30839,3,15.8765`
 	if err != nil {
 		t.Error(err)
 	} else {
-		if len(out) == 0 {
-			t.Errorf("No output")
+		if len(out) != 3 {
+			t.Errorf("Wrong length of output %d", len(out))
 		} else {
 			for i := 0; i < len(out); i++ {
 				t.Log(out[i].(*ShapePoint).String())
 			}
-			t.Errorf("Need to validate the struct")
+
+			sp := out[0].(*ShapePoint)
+
+			assert(t, sp.Id == "A_shp", "Wrong shape point shape id")
+			assert(t, sp.PtLatitude == "37.61956", "Wrong shape points latitude")
+			assert(t, sp.PtLongitude == "-122.48161", "Wrong shape points longitude")
+			assert(t, sp.PtSequence == "1", "Wrong shape points sequence")
+			assert(t, sp.DistTraveled == "0", "Wrong shape points distance travelled")
 		}
 	}
 }
@@ -235,13 +317,19 @@ AWE1,20:30:00,28:00:00,420`
 	if err != nil {
 		t.Error(err)
 	} else {
-		if len(out) == 0 {
-			t.Errorf("No output")
+		if len(out) != 3 {
+			t.Errorf("Wrong length of output %d", len(out))
 		} else {
 			for i := 0; i < len(out); i++ {
 				t.Log(out[i].(*Frequency).String())
 			}
-			t.Errorf("Need to validate the struct")
+
+			f := out[1].(*Frequency)
+
+			assert(t, f.TripId == "AWE1", "Wrong frequency trid id")
+			assert(t, f.StartTime == "06:30:00", "Wrong frequency start time")
+			assert(t, f.EndTime == "20:30:00", "Wrong frequency end time")
+			assert(t, f.HeadwaySecs == "180", "Wrong frequency headway")
 		}
 	}
 }
@@ -256,13 +344,18 @@ S23,S7,1,`
 	if err != nil {
 		t.Error(err)
 	} else {
-		if len(out) == 0 {
-			t.Errorf("No output")
+		if len(out) != 3 {
+			t.Errorf("Wrong length of output %d", len(out))
 		} else {
 			for i := 0; i < len(out); i++ {
 				t.Log(out[i].(*Transfer).String())
 			}
-			t.Errorf("Need to validate the struct")
+
+			tr := out[0].(*Transfer)
+			assert(t, tr.FromStopId == "S6", "Wrong transfer from stop id")
+			assert(t, tr.ToStopId == "S7", "Wrong transfer to stop id")
+			assert(t, tr.TransferType == "2", "Wrong transfer type")
+			assert(t, tr.MinimumTransferTime == "300", "Wrong transfer min transfer time")
 		}
 	}
 }
